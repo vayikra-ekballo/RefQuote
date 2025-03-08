@@ -1,0 +1,1 @@
+This directory will contain crawled copies of the Bible. Currently the only Bible present here is the online HTML one from the MIT website of `jywang`. The plan is to then transform them into some standard or non-standard JSON representation.
