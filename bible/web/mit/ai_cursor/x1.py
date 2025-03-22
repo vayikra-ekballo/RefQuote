@@ -64,18 +64,23 @@ def footnotes_html_to_array(html):
     
     for li in soup.find_all('li'):
         text = ''
-        for elem in li.descendants:
+        for elem in li.contents:  # Use contents instead of descendants to avoid repetition
             if isinstance(elem, str):
                 text += elem
             elif elem.name == 'i':
                 text += f'*{elem.get_text()}*'
+            elif elem.name == 'a':  # Handle anchor tags separately
+                text += ''.join(
+                    f'*{sub_elem.get_text()}*' if sub_elem.name == 'i' else sub_elem for sub_elem in elem.contents
+                )
         
         text = re.sub(r'^\[\d+\]\s*', '', text.strip())  # Remove leading [number]
         result.append(text)
     
     return result
 
-print(footnotes_html_to_array(footnotes_html))
+print('Footnotes:', footnotes_html_to_array(footnotes_html))
+print('\n')
 
 sys.exit()
 
