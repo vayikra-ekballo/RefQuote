@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from multiprocessing import Pool
 from bs4 import BeautifulSoup
 import json
 import re
@@ -120,13 +121,18 @@ class BibleChapter(RawBibleChapter):
         print('Footnotes:', footnotes, '\n')
 
 
+def process_chapter(raw_chapter: RawBibleChapter) -> BibleChapter:
+    return BibleChapter(raw_chapter, True)
+
+
 def process_bible():
     raw_chapters = list(yield_chapters())
 
     total_chapters_count = len(raw_chapters)
     assert len(raw_chapters) == 1189
 
-    chapters = [BibleChapter(ch, True) for ch in raw_chapters]
+    with Pool() as p:
+      chapters = p.map(process_chapter, raw_chapters)  
 
 
 if __name__ == "__main__":
