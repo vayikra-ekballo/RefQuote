@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-
 from bs4 import BeautifulSoup
+import json
 import re
+
+from yield_chapters import yield_chapters
 
 
 def extract_html_portions(html_content):
@@ -107,14 +109,26 @@ def process_html(html):
 
 
 def get_test_file():
-    with open('../html/PS+24.html', 'r') as file:
+    with open('html/PS+24.html', 'r') as file:
         return file.read()
 
 
-def main():
+def test():
     html = get_test_file()
     process_html(html)
 
 
+def process_bible():
+    total_chapters_count = 0
+
+    for (book_short_name, chapter, book_full_name) in yield_chapters():
+        total_chapters_count += 1
+        print(book_full_name, chapter)
+
+    assert total_chapters_count == 1189
+
+
 if __name__ == "__main__":
-    main()
+    process_bible()
+    test()
+
