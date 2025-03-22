@@ -72,6 +72,12 @@ def verses_html_iterator(html):
         # Extract text and remove unnecessary whitespace
         text = soup.get_text()
         text = re.sub(r'\s+', ' ', text).strip()
+
+        if '\x1a' in text:
+            print('in', number)
+            print(repr(text))
+            text = text.replace('\x1a', '').strip()
+            print(repr(text))
         
         yield (int(number), text)
 
@@ -112,13 +118,13 @@ class BibleChapter(RawBibleChapter):
         self.footnotes = footnotes_html_to_array(portions['footnotes_html'])
         self.subheading, self.verses, self.skipped_verse_numbers = process_verses(portions['verses_html'])
 
-    def display(ch):
-        print('Title:', title, '\n')
-        print('Subheading:', subheading, '\n')
-        print('Verses:', verses, '\n')
+    def display(self):
+        print('Title:', self.title, '\n')
+        print('Subheading:', self.subheading, '\n')
+        print('Verses:', self.verses, '\n')
         if len(self.skipped_verse_numbers) > 0:
             print('Skipped verses:', self.skipped_verse_numbers)
-        print('Footnotes:', footnotes, '\n')
+        print('Footnotes:', self.footnotes, '\n')
 
 
 def process_chapter(raw_chapter: RawBibleChapter) -> BibleChapter:
@@ -134,6 +140,8 @@ def process_bible():
     with Pool() as p:
       chapters = p.map(process_chapter, raw_chapters)  
 
+    # for ch in chapters:
+    #     ch.display()
 
 if __name__ == "__main__":
     process_bible()
