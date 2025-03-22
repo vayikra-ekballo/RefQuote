@@ -1,0 +1,16 @@
+{
+  "name": "test-json-lzma2",
+  "version": "0.0.1",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "main": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "dependencies": {
+    "lzma-web": "^3.0.1"
+  }
+}

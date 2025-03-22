@@ -1,0 +1,16 @@
+{
+  "name": "test-json-lzma",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "lzma": "^2.3.2",
+    "lzma-web": "^3.0.1"
+  }
+}
