@@ -74,10 +74,7 @@ def verses_html_iterator(html):
         text = re.sub(r'\s+', ' ', text).strip()
 
         if '\x1a' in text:
-            print('in', number)
-            print(repr(text))
             text = text.replace('\x1a', '').strip()
-            print(repr(text))
         
         yield (int(number), text)
 
@@ -142,6 +139,7 @@ def process_bible():
 
     # for ch in chapters:
     #     ch.display()
+
 
 if __name__ == "__main__":
     process_bible()
