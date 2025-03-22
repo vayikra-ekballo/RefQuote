@@ -70,7 +70,8 @@ def footnotes_html_to_array(html):
             elif elem.name == 'i':
                 text += f'*{elem.get_text()}*'
         
-        result.append(text.strip())
+        text = re.sub(r'^\[\d+\]\s*', '', text.strip())  # Remove leading [number]
+        result.append(text)
     
     return result
 
