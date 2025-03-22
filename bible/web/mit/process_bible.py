@@ -124,7 +124,7 @@ def process_bible():
     for ch in yield_chapters():
         total_chapters_count += 1
         print('Processing %s %d...' % (ch.full_name, ch.chapter))
-        # process_html(ch.html)
+        process_html(ch.html)
 
     assert total_chapters_count == 1189
 
