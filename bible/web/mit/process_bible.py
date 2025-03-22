@@ -109,7 +109,7 @@ def process_html(html):
 
 
 def get_test_file():
-    with open('html/PS+24.html', 'r') as file:
+    with open('html/ACTS+28.html', 'r') as file:
         return file.read()
 
 
@@ -124,7 +124,7 @@ def process_bible():
     for ch in yield_chapters():
         total_chapters_count += 1
         print('Processing %s %d...' % (ch.full_name, ch.chapter))
-        process_html(ch.html)
+        # process_html(ch.html)
 
     assert total_chapters_count == 1189
 

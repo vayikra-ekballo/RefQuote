@@ -105,7 +105,7 @@ class BibleChapter:
 def yield_chapters():
     for (code_name, chapter_count, full_name) in yield_books():
         for chapter in range(1, chapter_count + 1):
-            ch = BibleChapter(code_name, chapter_count, full_name)
+            ch = BibleChapter(code_name, chapter, full_name)
             yield ch
 
 
