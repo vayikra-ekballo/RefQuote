@@ -102,10 +102,10 @@ def process_html(html):
     footnotes = footnotes_html_to_array(portions['footnotes_html'])
     subheading, verses = process_verses(portions['verses_html'])
 
-    print('Title:', title, '\n')
-    print('Subheading:', subheading, '\n')
-    print('Verses:', verses, '\n')
-    print('Footnotes:', footnotes, '\n')
+    # print('Title:', title, '\n')
+    # print('Subheading:', subheading, '\n')
+    # print('Verses:', verses, '\n')
+    # print('Footnotes:', footnotes, '\n')
 
 
 def get_test_file():
@@ -123,12 +123,13 @@ def process_bible():
 
     for ch in yield_chapters():
         total_chapters_count += 1
-        print(ch.full_name, ch.chapter)
+        print('Processing %s %d...' % (ch.full_name, ch.chapter))
+        process_html(ch.html)
 
     assert total_chapters_count == 1189
 
 
 if __name__ == "__main__":
+    # test()
     process_bible()
-    test()
 
