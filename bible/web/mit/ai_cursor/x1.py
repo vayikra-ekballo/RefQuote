@@ -55,8 +55,55 @@ def footnotes_html_to_array(html):
     return result
 
 
-def verses_html_to_array(html):
-    print(html)
+def verses_html_iterator(html):
+    # print(html)
+
+    # Use regex to find all verse sections (DT and DD pairs)
+    pattern = r'<DT>(\d+)\s*<DD>(.*?)(?=<DT>|$)'
+    matches = re.findall(pattern, html, re.DOTALL)
+    
+    # Process each match to clean HTML and create structured data
+    for number, content in matches:
+        soup = BeautifulSoup(content, 'html.parser')
+        
+        # Extract text and remove unnecessary whitespace
+        text = soup.get_text()
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        yield (int(number), text)
+
+
+def process_verses(html):
+    verses = dict()
+    subheading = None
+
+    for (vn, verse) in verses_html_iterator(html):
+        if vn not in verses:
+            verses[vn] = verse
+        else:
+            if vn == 1:
+                subheading = verses[1]
+                verses[1] = verse
+            else:
+                raise Exception('Repeating verse: %d.' % vn)
+
+    verses_array = []
+    for i in range(1, len(verses) + 1):
+        verses_array.append(verses[i])
+
+    return (subheading, verses_array)
+
+
+def process_html(html):
+    portions = extract_html_portions(html)
+    title = portions['title']
+    footnotes = footnotes_html_to_array(portions['footnotes_html'])
+    subheading, verses = process_verses(portions['verses_html'])
+
+    print('Title:', title, '\n')
+    print('Subheading:', subheading, '\n')
+    print('Verses:', verses, '\n')
+    print('Footnotes:', footnotes, '\n')
 
 
 def get_test_file():
@@ -65,12 +112,8 @@ def get_test_file():
 
 
 def main():
-    html_content = get_test_file()
-    portions = extract_html_portions(html_content)
-    footnotes = footnotes_html_to_array(portions['footnotes_html'])
-    print('Title:', portions['title'], '\n')
-    print('Footnotes:', footnotes, '\n')
-    verses_html_to_array(portions['verses_html'])
+    html = get_test_file()
+    process_html(html)
 
 
 if __name__ == "__main__":
