@@ -93,9 +93,19 @@ def yield_books():
     yield ('REV', 22, 'Revelation')
 
 
+class BibleChapter:
+    def __init__(self, code_name: str, chapter: int, full_name: str):
+        self.code_name, self.chapter, self.full_name = code_name, chapter, full_name
+
+        file_path = 'html/%s+%d.html' % (self.code_name, self.chapter)
+        with open(file_path, 'r') as file:
+            self.html = file.read()
+
+
 def yield_chapters():
-    for (short_name, chapter_count, full_name) in yield_books():
+    for (code_name, chapter_count, full_name) in yield_books():
         for chapter in range(1, chapter_count + 1):
-            yield (short_name, chapter, full_name)
+            ch = BibleChapter(code_name, chapter_count, full_name)
+            yield ch
 
 

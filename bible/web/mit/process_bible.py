@@ -121,9 +121,9 @@ def test():
 def process_bible():
     total_chapters_count = 0
 
-    for (book_short_name, chapter, book_full_name) in yield_chapters():
+    for ch in yield_chapters():
         total_chapters_count += 1
-        print(book_full_name, chapter)
+        print(ch.full_name, ch.chapter)
 
     assert total_chapters_count == 1189
 
