@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+
+from collections import OrderedDict
 from multiprocessing import Pool
 from bs4 import BeautifulSoup
 import json
 import re
 
-from yield_chapters import yield_chapters, RawBibleChapter
+from yield_chapters import yield_chapters, RawBibleChapter, yield_books
 
 
 def extract_html_portions(html_content):
@@ -125,7 +127,7 @@ class BibleChapter(RawBibleChapter):
 
 
 def process_chapter(raw_chapter: RawBibleChapter) -> BibleChapter:
-    return BibleChapter(raw_chapter, True)
+    return BibleChapter(raw_chapter)
 
 
 def process_bible():
@@ -137,8 +139,34 @@ def process_bible():
     with Pool() as p:
       chapters = p.map(process_chapter, raw_chapters)  
 
-    # for ch in chapters:
-    #     ch.display()
+    bible = {
+        'books': OrderedDict()
+    }
+
+    for (code_name, chapter_count, full_name) in yield_books():
+        for chapter in range(1, chapter_count + 1):
+            if full_name not in bible['books']:
+                bible['books'][full_name] = []
+            bible['books'][full_name].append(None)
+
+    for ch in chapters:
+        chapter = OrderedDict()
+        chapter["title"] = ch.title
+        if ch.subheading is not None:
+            chapter['subheading'] = ch.subheading
+        chapter["verses"] = ch.verses
+        if len(ch.skipped_verse_numbers) > 0:
+            chapter['skippedVerseNumbers'] = ch.skipped_verse_numbers
+        chapter["footnotes"] = ch.footnotes
+
+        bible['books'][ch.full_name][ch.chapter-1] = chapter
+
+    bible_json = json.dumps(bible, indent=4)
+    output_json_path = '../../json/mit.json'
+    with open(output_json_path, 'w') as f:
+        f.write(bible_json)
+
+    print('Done. Written to: %s' % output_json_path)
 
 
 if __name__ == "__main__":
