@@ -93,7 +93,7 @@ def yield_books():
     yield ('REV', 22, 'Revelation')
 
 
-class BibleChapter:
+class RawBibleChapter:
     def __init__(self, code_name: str, chapter: int, full_name: str):
         self.code_name, self.chapter, self.full_name = code_name, chapter, full_name
 
@@ -105,7 +105,7 @@ class BibleChapter:
 def yield_chapters():
     for (code_name, chapter_count, full_name) in yield_books():
         for chapter in range(1, chapter_count + 1):
-            ch = BibleChapter(code_name, chapter, full_name)
+            ch = RawBibleChapter(code_name, chapter, full_name)
             yield ch
 
 

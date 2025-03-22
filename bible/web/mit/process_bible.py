@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import json
 import re
 
-from yield_chapters import yield_chapters
+from yield_chapters import yield_chapters, RawBibleChapter
 
 
 def extract_html_portions(html_content):
@@ -90,46 +90,45 @@ def process_verses(html):
                 raise Exception('Repeating verse: %d.' % vn)
 
     verses_array = []
+    skipped_verse_numbers = []
     for i in range(1, len(verses) + 1):
-        verses_array.append(verses[i])
+        if i not in verses:
+            skipped_verse_numbers.append(i)
+        else:
+            verses_array.append(verses[i])
 
-    return (subheading, verses_array)
-
-
-def process_html(html):
-    portions = extract_html_portions(html)
-    title = portions['title']
-    footnotes = footnotes_html_to_array(portions['footnotes_html'])
-    subheading, verses = process_verses(portions['verses_html'])
-
-    # print('Title:', title, '\n')
-    # print('Subheading:', subheading, '\n')
-    # print('Verses:', verses, '\n')
-    # print('Footnotes:', footnotes, '\n')
+    return (subheading, verses_array, skipped_verse_numbers)
 
 
-def get_test_file():
-    with open('html/ACTS+28.html', 'r') as file:
-        return file.read()
+class BibleChapter(RawBibleChapter):
+    def __init__(self, ch: RawBibleChapter, log=False):
+        super().__init__(ch.code_name, ch.chapter, ch.full_name)
+        if log == True:
+            print('Processing %s %d...' % (ch.full_name, ch.chapter))
+        
+        portions = extract_html_portions(ch.html)
+        self.title = portions['title']
+        self.footnotes = footnotes_html_to_array(portions['footnotes_html'])
+        self.subheading, self.verses, self.skipped_verse_numbers = process_verses(portions['verses_html'])
 
-
-def test():
-    html = get_test_file()
-    process_html(html)
+    def display(ch):
+        print('Title:', title, '\n')
+        print('Subheading:', subheading, '\n')
+        print('Verses:', verses, '\n')
+        if len(self.skipped_verse_numbers) > 0:
+            print('Skipped verses:', self.skipped_verse_numbers)
+        print('Footnotes:', footnotes, '\n')
 
 
 def process_bible():
-    total_chapters_count = 0
+    raw_chapters = list(yield_chapters())
 
-    for ch in yield_chapters():
-        total_chapters_count += 1
-        print('Processing %s %d...' % (ch.full_name, ch.chapter))
-        process_html(ch.html)
+    total_chapters_count = len(raw_chapters)
+    assert len(raw_chapters) == 1189
 
-    assert total_chapters_count == 1189
+    chapters = [BibleChapter(ch, True) for ch in raw_chapters]
 
 
 if __name__ == "__main__":
-    # test()
     process_bible()
 
