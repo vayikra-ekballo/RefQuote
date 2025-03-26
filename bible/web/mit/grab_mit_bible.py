@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Run this inside a separate folder.
-# For example: mkdir mit; ../grab_niv1984.py
+# For example: mkdir html/; ../grab_mit_bible.py
 # This script only works as long as http://web.mit.edu/jywang/www/cef/Bible/... is up.
 
 import os
