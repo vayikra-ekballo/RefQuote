@@ -6,9 +6,19 @@
 #
 beautifulsoup4==4.13.3
     # via -r requirements.in
+certifi==2025.1.31
+    # via requests
+charset-normalizer==3.4.1
+    # via requests
+idna==3.10
+    # via requests
+requests==2.32.3
+    # via -r requirements.in
 sh==2.2.2
     # via -r requirements.in
 soupsieve==2.6
     # via beautifulsoup4
 typing-extensions==4.12.2
     # via beautifulsoup4
+urllib3==2.3.0
+    # via requests
