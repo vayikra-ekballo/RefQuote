@@ -7,36 +7,67 @@ import json
 import re
 
 def process_1(soup):
-    def extract_text_with_notes(tag):
-        text = ""
-        for elem in tag.descendants:
-            if isinstance(elem, str):
-                text += elem
-            elif elem.name == "sup":
-                if "footnote" in elem.get("class", []):
-                    text += f'[{elem.get_text(strip=True)}]'
-                elif "crossreference" in elem.get("class", []):
-                    text += f'<{elem.get_text(strip=True)}>'
-        return " ".join(text.split())
+    # Extract title and subtitle
+    title = soup.find('h3').get_text(strip=True)
+    subtitle = soup.find('h4').get_text(strip=True)
 
-    result = {
-        "title": soup.find("h3").get_text(strip=True),
-        "subtitle": soup.find("h4").get_text(strip=True),
-        "verses": []
+    # Extract verses
+    verses = []
+    current_verse = {
+        'number': None,
+        'text': ''
     }
 
-    for verse in soup.find_all("span", class_=lambda c: c and c.startswith("text Ps-")):
-        verse_number_tag = verse.find("sup", class_="versenum")
-        if verse_number_tag:
-            verse_number = verse_number_tag.get_text(strip=True)
-            verse_number_tag.extract()
-        else:
-            verse_number = ""
+    for line_elem in soup.find_all('span', class_=re.compile(r'^text Ps-23-\d+')):
+        # Extract verse number
+        verse_num_elem = line_elem.find('sup', class_='versenum')
+        if verse_num_elem:
+            # New verse starts
+            if current_verse:
+                verses.append(current_verse)
+            current_verse = {
+                'number': int(verse_num_elem.get_text(strip=True)),
+                'text': ''
+            }
 
-        verse_text = extract_text_with_notes(verse)
-        result["verses"].append({"verse": verse_number, "text": verse_text})
+        # Extract text (excluding verse number)
+        line_text = line_elem.get_text(strip=True)
+        if verse_num_elem:
+            line_text = line_text.replace(verse_num_elem.get_text(strip=True), '').strip()
 
-    return json.dumps(result, indent=4, ensure_ascii=False)
+        # # Add footnotes and crossreferences
+        # footnotes = line_elem.find_all('sup', class_='footnote')
+        # crossrefs = line_elem.find_all('sup', class_='crossreference')
+        #
+        # if footnotes:
+        #     current_verse['footnotes'] = [
+        #         f'[{fn.get_text(strip=True)}]' for fn in footnotes
+        #     ]
+        #
+        # if crossrefs:
+        #     current_verse['crossreferences'] = [
+        #         f'<{cr.get_text(strip=True)}>'.replace('(', '').replace(')', '')
+        #         for cr in crossrefs
+        #     ]
+
+        # Accumulate text
+        if line_text:
+            current_verse['text'] += line_text + ' '
+
+    # Add last verse
+    if current_verse:
+        verses.append(current_verse)
+
+    # Remove trailing spaces from text
+    for verse in verses:
+        verse['text'] = verse['text'].strip()
+
+    # Create final JSON structure
+    return {
+        'title': title,
+        'subtitle': subtitle,
+        'verses': verses
+    }
 
 def process_bible():
     with open('Psalm-23-NIV.html', 'r') as f:
@@ -65,7 +96,8 @@ def process_bible():
     # print()
     # print(str(crossrefs))
 
-    print(process_1(std_text))
+    r = process_1(std_text)
+    print(json.dumps(r, indent=4))
 
 if __name__ == "__main__":
     process_bible()
