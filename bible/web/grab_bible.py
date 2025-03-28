@@ -2,8 +2,8 @@
 
 import json
 import requests
+from time import sleep
 from bs4 import BeautifulSoup
-
 from yield_books import yield_protestant_canon_books
 
 
@@ -44,15 +44,24 @@ def grab_chapter(book, chapter, translation):
     response = requests.get(url)
     response.raise_for_status()
     html = response.text
-    chunked = chunk_out(html)
-    json_output = json.dumps(chunked, indent=4)
-    return json_output
+    return chunk_out(html)
 
 
-def grab_bible():
-    json_output = grab_chapter("Psalm", 23, "NIV")
-    print(json_output)
+def grab_bible(translation):
+    for book_name, chapter_count in [("Habakkuk", 3)]:
+        chapters = []
+        for chapter_number in range(1, chapter_count + 1):
+            print(f"Grabbing {book_name} {chapter_number}...")
+            json_output = grab_chapter(book_name, chapter_number, translation)
+            chapters.append(json_output)
+            sleep(0.5)
+
+        assert len(chapters) == chapter_count
+        json_output = json.dumps(chapters, indent=4)
+        file_name = f"archive/{translation.lower()}/{book_name}.html.json"
+        with open(file_name, "w") as f:
+            f.write(json_output)
 
 
 if __name__ == "__main__":
-    grab_bible()
+    grab_bible("NIV")
