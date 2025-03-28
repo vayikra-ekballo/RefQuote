@@ -4,28 +4,38 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
+from yield_books import yield_protestant_canon_books
+
+
 def chunk_out(html):
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, "html.parser")
 
     std_text_l = soup.find_all("div", class_="std-text")
     if len(std_text_l) != 1:
-        raise Exception("Expected a single <div> with class='std-text'. Got %d." % len(std_text_l))
+        raise Exception(
+            "Expected a single <div> with class='std-text'. Got %d." % len(std_text_l)
+        )
     std_text = std_text_l[0]
 
     footnotes_l = soup.find_all("div", class_="footnotes")
     if len(footnotes_l) > 1:
-        raise Exception("Expected a single <div> with class='footnotes'. Got %d." % len(footnotes_l))
+        raise Exception(
+            "Expected a single <div> with class='footnotes'. Got %d." % len(footnotes_l)
+        )
     footnotes = footnotes_l[0] if len(footnotes_l) == 1 else None
 
     crossrefs_l = soup.find_all("div", class_="crossrefs hidden")
     if len(crossrefs_l) != 1:
-        raise Exception("Expected a single <div> with class='crossrefs hidden'. Got %d." % len(footnotes_l))
+        raise Exception(
+            "Expected a single <div> with class='crossrefs hidden'. Got %d."
+            % len(footnotes_l)
+        )
     crossrefs = crossrefs_l[0] if len(crossrefs_l) == 1 else None
 
     return {
-        'verses_html': str(std_text),
-        'footnotes_html': str(footnotes),
-        'crossrefs_html': str(crossrefs)
+        "verses_html": str(std_text),
+        "footnotes_html": str(footnotes),
+        "crossrefs_html": str(crossrefs),
     }
 
 
@@ -46,4 +56,3 @@ def grab_bible():
 
 if __name__ == "__main__":
     grab_bible()
-
