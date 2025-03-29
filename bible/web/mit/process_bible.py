@@ -273,7 +273,7 @@ def process_bible():
 
         bible["books"][ch.full_name][ch.chapter - 1] = chapter
 
-    bible_json = json.dumps(bible, indent=4)
+    bible_json = json.dumps(bible, indent="\t")
     output_json_path = "../../json/mit.json"
     with open(output_json_path, "w") as f:
         f.write(bible_json)
