@@ -48,7 +48,7 @@ def grab_chapter(book, chapter, translation):
 
 
 def grab_bible(translation):
-    for book_name, chapter_count in [("Habakkuk", 3)]:
+    for book_name, chapter_count in yield_protestant_canon_books():
         chapters = []
         for chapter_number in range(1, chapter_count + 1):
             print(f"Grabbing {book_name} {chapter_number}...")
