@@ -2,41 +2,79 @@
 
 import json
 import requests
+import warnings
 from time import sleep
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from yield_books import yield_protestant_canon_books
 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-def chunk_out(html):
+
+def chunk_out(html: str, translation: str):
     soup = BeautifulSoup(html, "html.parser")
 
-    std_text_l = soup.find_all("div", class_="std-text")
-    if len(std_text_l) != 1:
-        raise Exception(
-            "Expected a single <div> with class='std-text'. Got %d." % len(std_text_l)
-        )
-    std_text = std_text_l[0]
+    if translation == "NIV":
+        std_text_l = soup.find_all("div", class_="std-text")
+        if len(std_text_l) != 1:
+            raise Exception(
+                "Expected a single <div> with class='std-text'. Got %d."
+                % len(std_text_l)
+            )
+        std_text = std_text_l[0]
 
-    footnotes_l = soup.find_all("div", class_="footnotes")
-    if len(footnotes_l) > 1:
-        raise Exception(
-            "Expected a single <div> with class='footnotes'. Got %d." % len(footnotes_l)
-        )
-    footnotes = footnotes_l[0] if len(footnotes_l) == 1 else None
+        footnotes_l = soup.find_all("div", class_="footnotes")
+        if len(footnotes_l) > 1:
+            raise Exception(
+                "Expected a single <div> with class='footnotes'. Got %d."
+                % len(footnotes_l)
+            )
+        footnotes = footnotes_l[0] if len(footnotes_l) == 1 else None
 
-    crossrefs_l = soup.find_all("div", class_="crossrefs hidden")
-    if len(crossrefs_l) != 1:
-        raise Exception(
-            "Expected a single <div> with class='crossrefs hidden'. Got %d."
-            % len(footnotes_l)
-        )
-    crossrefs = crossrefs_l[0] if len(crossrefs_l) == 1 else None
+        crossrefs_l = soup.find_all("div", class_="crossrefs hidden")
+        if len(crossrefs_l) != 1:
+            raise Exception(
+                "Expected a single <div> with class='crossrefs hidden'. Got %d."
+                % len(footnotes_l)
+            )
+        crossrefs = crossrefs_l[0] if len(crossrefs_l) == 1 else None
 
-    return {
-        "verses_html": str(std_text),
-        "footnotes_html": str(footnotes),
-        "crossrefs_html": str(crossrefs),
-    }
+    else:
+        std_text_l = soup.find_all("div", class_="result-text-style-normal")
+        if len(std_text_l) != 1:
+            raise Exception(
+                "Expected a single <div> with class='result-text-style-normal'. Got %d."
+                % len(std_text_l)
+            )
+        std_text = std_text_l[0]
+
+        footnotes_l = soup.find_all("div", class_="footnotes")
+        if len(footnotes_l) > 1:
+            raise Exception(
+                "Expected a single <div> with class='footnotes'. Got %d."
+                % len(footnotes_l)
+            )
+        footnotes = footnotes_l[0] if len(footnotes_l) == 1 else None
+
+        if footnotes is not None:
+            unwanted_footnotes_div = std_text.find("div", class_="footnotes")
+            for comment in std_text.find_all(
+                text=lambda text: isinstance(text, Comment)
+            ):
+                comment.extract()
+            unwanted_footnotes_div.extract()
+
+        crossrefs_l = soup.find_all("div", class_="crossrefs hidden")
+        if len(crossrefs_l) > 1:
+            raise Exception(
+                "Expected a single <div> with class='crossrefs hidden'. Got %d."
+                % len(footnotes_l)
+            )
+        crossrefs = crossrefs_l[0] if len(crossrefs_l) == 1 else None
+
+    chunks = {"verses_html": str(std_text), "footnotes_html": str(footnotes)}
+    if crossrefs is not None:
+        chunks["crossrefs_html"] = str(crossrefs)
+    return chunks
 
 
 def grab_chapter(book, chapter, translation):
@@ -44,7 +82,8 @@ def grab_chapter(book, chapter, translation):
     response = requests.get(url)
     response.raise_for_status()
     html = response.text
-    return chunk_out(html)
+    chunks = chunk_out(html, translation)
+    return chunks
 
 
 def grab_bible(translation):
@@ -64,4 +103,5 @@ def grab_bible(translation):
 
 
 if __name__ == "__main__":
-    grab_bible("NIV")
+    # grab_bible("NIV")
+    grab_bible("NLT")
