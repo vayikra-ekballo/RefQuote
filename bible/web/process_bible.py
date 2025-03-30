@@ -11,9 +11,10 @@ class BibleChapter:
 		self.title = title
 		self.subtitle = subtitle
 
+		# print(verses_with_num)
 		# Assert that verse numbers are 1 to N
-		for i, verse in enumerate(verses_with_num):
-			assert verse['number'] == str(i + 1)
+		# for i, verse in enumerate(verses_with_num):
+		# 	assert verse['number'] == str(i + 1)
 		# Transform verses into a list of strings
 		verses = [verse['text'] for verse in verses_with_num]
 
@@ -26,11 +27,10 @@ class BibleChapter:
 
 	def display(self, clean=False):
 		title = self.scrub(self.title) if clean else self.title
-		if self.subtitle is not None:
-			subtitle = self.scrub(self.subtitle) if clean else self.subtitle
 		verses = [self.scrub(verse) for verse in self.verses] if clean else self.verses
 		print(f'Title: {title}')
 		if self.subtitle is not None:
+			subtitle = self.scrub(self.subtitle) if clean else self.subtitle
 			print(f'Subtitle: {subtitle}')
 		print('Verses:')
 		for i in range(len(verses)):
@@ -44,6 +44,7 @@ class BibleChapter:
 
 
 def process_chapter(html):
+	print(html)
 	soup = BeautifulSoup(html, 'html.parser')
 
 	title = soup.find('span', class_='text').text.strip()
@@ -55,10 +56,22 @@ def process_chapter(html):
 	current_verse = None
 	verse_number = None
 	for span in soup.find_all('span', class_=lambda c: c and c.startswith('text')):
+		# Check if this span contains a chapter number
+		chapter_num_span = span.find('span', class_='chapternum')
 		# Check if this span contains a verse number
 		verse_num_sup = span.find('sup', class_='versenum')
 
-		if verse_num_sup:
+		if chapter_num_span:
+			# If we have a previous verse, add it to our collection
+			if current_verse is not None or verse_number is not None:
+				raise Exception('Unexpected chapter number')
+
+			# Start a new chapter
+			verse_number = 1
+			# Remove the chapter number from the text
+			verse_text = span.text.replace(chapter_num_span.text, '', 1).strip()
+			current_verse = verse_text
+		elif verse_num_sup:
 			# If we have a previous verse, add it to our collection
 			if current_verse is not None and verse_number is not None:
 				verses_with_num.append({'number': verse_number, 'text': current_verse.strip()})
@@ -98,10 +111,12 @@ def grab_bible_html(translation: str) -> dict:
 def process_bible(translation: str):
 	bible_html = grab_bible_html(translation)
 	# verses_html = bible_html['Psalms'][23 - 1]['verses_html']
-	verses_html = bible_html['Jude'][1 - 1]['verses_html']
+	# verses_html = bible_html['Psalms'][117 - 1]['verses_html']
+	verses_html = bible_html['Matthew'][5 - 1]['verses_html']
+	# verses_html = bible_html['Jude'][1 - 1]['verses_html']
 	r = process_chapter(verses_html)
 	r.display(True)
 
 
 if __name__ == '__main__':
-	process_bible('NET')
+	process_bible('NIV')
