@@ -2,6 +2,8 @@
 
 import re
 import json
+from typing import Optional
+
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from yield_books import yield_protestant_canon_books
@@ -71,6 +73,18 @@ class BibleChapter:
 		return d
 
 	@staticmethod
+	def extract_verse_num(verse_num_elem) -> Optional[int]:
+		try:
+			return int(verse_num_elem.text.strip()) if verse_num_elem else None
+		except ValueError:
+			verse_num_text = verse_num_elem.text.strip()
+			if verse_num_text[0] == '[' and verse_num_text[-1] == ']':
+				verse_num_text = verse_num_text[1:-1]
+				return int(verse_num_text)
+			else:
+				raise Exception(f'Unexpected verse number: {verse_num_text}')
+
+	@staticmethod
 	def process_chapter(html):
 		soup = BeautifulSoup(html, 'html.parser')
 
@@ -99,7 +113,7 @@ class BibleChapter:
 						# Extract verse number
 						verse_num_elem = span.find('sup', class_='versenum')
 						chapter_num_span = span.find('span', class_='chapternum')
-						verse_num = int(verse_num_elem.text.strip()) if verse_num_elem else None
+						verse_num = BibleChapter.extract_verse_num(verse_num_elem)
 						if chapter_num_span:
 							verse_num = 1
 
@@ -144,7 +158,7 @@ class BibleChapter:
 					verses_with_num.append(BibleChapter.VerseWithNum(verse_number, current_verse.strip()))
 
 				# Start a new verse
-				verse_number = int(verse_num_sup.text.strip())
+				verse_number = BibleChapter.extract_verse_num(verse_num_sup)
 				# Remove the verse number from the text
 				verse_text = span.text.replace(verse_num_sup.text, '', 1).strip()
 				current_verse = verse_text
@@ -179,10 +193,16 @@ def process_bible(translation: str):
 	bible_html = grab_bible_html(translation)
 	# verses_html = bible_html['Psalms'][23 - 1]['verses_html']
 	# verses_html = bible_html['Psalms'][117 - 1]['verses_html']
-	verses_html = bible_html['Matthew'][5 - 1]['verses_html']
+	# verses_html = bible_html['Matthew'][5 - 1]['verses_html']
 	# verses_html = bible_html['Jude'][1 - 1]['verses_html']
-	r = BibleChapter.process_chapter(verses_html)
-	r.display(True)
+	# verses_html = bible_html['Matthew'][17 - 1]['verses_html']
+	# r = BibleChapter.process_chapter(verses_html)
+	# r.display(True)
+	for book_name, chapter_count in yield_protestant_canon_books():
+		for i in range(chapter_count):
+			verses_html = bible_html[book_name][i]['verses_html']
+			print(f'Processing {book_name} {i + 1}...')
+			chapter = BibleChapter.process_chapter(verses_html)
 
 
 if __name__ == '__main__':
