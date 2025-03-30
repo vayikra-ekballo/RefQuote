@@ -109,8 +109,9 @@ def grab_bible(translation: str):
 if __name__ == "__main__":
     # grab_bible("NIV")
     # grab_bible("NLT")
-    grab_bible("ESV")
-    # chunks = grab_chapter("Jude", 1, "ESV")
+    # grab_bible("ESV")
+    # grab_bible("NET")
+    # chunks = grab_chapter("Jude", 1, "NET")
     # print(chunks["verses_html"])
     # print()
     # print(chunks["crossrefs_html"])
