@@ -1,0 +1,5 @@
+target-version = "py313"
+
+[format]
+indent-style = "tab"
+line-length = 120
