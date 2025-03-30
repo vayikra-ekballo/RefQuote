@@ -3,8 +3,8 @@
 import re
 import json
 from typing import Optional
-
 from bs4 import BeautifulSoup
+from multiprocessing import Pool
 from dataclasses import dataclass
 from yield_books import yield_protestant_canon_books
 
@@ -85,7 +85,7 @@ class BibleChapter:
 				raise Exception(f'Unexpected verse number: {verse_num_text}')
 
 	@staticmethod
-	def process_chapter(html: str, book_name: str, chapter_num: int):
+	def process(html: str) -> 'BibleChapter':
 		soup = BeautifulSoup(html, 'html.parser')
 
 		title = soup.find('span', class_='text').text.strip()
@@ -178,6 +178,15 @@ class BibleChapter:
 		return BibleChapter(verses_with_num, sections, woj_verses, title, subtitle)
 
 
+@dataclass
+class RawBibleChapter:
+	book_name: str
+	chapter: int
+	verses_html: str
+	footnotes_html: str
+	crossrefs_html: Optional[str]
+
+
 def grab_bible_html(translation: str) -> dict:
 	bible_html = {}
 
@@ -192,20 +201,41 @@ def grab_bible_html(translation: str) -> dict:
 	return bible_html
 
 
+def process_chapter(raw_chapter: RawBibleChapter) -> BibleChapter:
+	# print(f'Processing {raw_chapter.book_name} {raw_chapter.chapter}...')
+	return BibleChapter.process(raw_chapter.verses_html)
+
+
 def process_bible(translation: str):
 	bible_html = grab_bible_html(translation)
 	# verses_html = bible_html['Psalms'][23 - 1]['verses_html']
 	# verses_html = bible_html['Psalms'][117 - 1]['verses_html']
 	# verses_html = bible_html['Matthew'][5 - 1]['verses_html']
 	# verses_html = bible_html['Jude'][1 - 1]['verses_html']
-	verses_html = bible_html['Matthew'][17 - 1]['verses_html']
-	r = BibleChapter.process_chapter(verses_html, 'Matthew', 17)
-	r.display(True)
-	# for book_name, chapter_count in yield_protestant_canon_books():
-	# 	for i in range(chapter_count):
-	# 		verses_html = bible_html[book_name][i]['verses_html']
-	# 		print(f'Processing {book_name} {i + 1}...')
-	# 		chapter = BibleChapter.process_chapter(verses_html)
+	# verses_html = bible_html['Matthew'][17 - 1]['verses_html']
+	# r = BibleChapter.process_chapter(verses_html, 'Matthew', 17)
+	# r.display(True)
+
+	raw_chapters: list[RawBibleChapter] = []
+	for book_name, chapter_count in yield_protestant_canon_books():
+		for i in range(chapter_count):
+			verses_html = bible_html[book_name][i]['verses_html']
+			footnotes_html = bible_html[book_name][i]['footnotes_html']
+			crossrefs_html = None
+			if 'crossrefs_html' in bible_html[book_name][i]:
+				crossrefs_html = bible_html[book_name][i]['crossrefs_html']
+			raw_chapters.append(
+				RawBibleChapter(
+					book_name,
+					i + 1,
+					verses_html,
+					footnotes_html,
+					crossrefs_html,
+				)
+			)
+
+	with Pool() as p:
+		chapters = p.map(process_chapter, raw_chapters)
 
 
 if __name__ == '__main__':
