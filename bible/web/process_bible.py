@@ -6,17 +6,49 @@ from bs4 import BeautifulSoup
 from yield_books import yield_protestant_canon_books
 
 
-def process_2(html_content):
-	soup = BeautifulSoup(html_content, 'html.parser')
+class BibleChapter:
+	def __init__(self, verses_with_num, title, subtitle):
+		self.title = title
+		self.subtitle = subtitle
 
-	title = soup.find('span', class_='text Ps-23-1', id='en-NIV-14237').text.strip()
-	subtitle = soup.find('h4').find('span', class_='text Ps-23-1').text.strip()
+		# Assert that verse numbers are 1 to N
+		for i, verse in enumerate(verses_with_num):
+			assert verse['number'] == str(i + 1)
+		# Transform verses into a list of strings
+		verses = [verse['text'] for verse in verses_with_num]
+
+		for i in range(len(verses)):
+			# Remove footnote markers like [a] and cross-reference markers like (A) and superscript references
+			verses[i] = (re.sub(r'\[\w\]|\(\w+\)', '', verses[i])).strip()
+
+		self.verses = verses
+
+	def display(self):
+		print(f'Title: {self.title}')
+		print(f'Subtitle: {self.subtitle}')
+		print('Verses:')
+		for i in range(len(self.verses)):
+			print(f'  {i + 1}: {self.verses[i]}')
+
+	def get_simple_dict(self):
+		d = {'title': self.title, 'verses': self.verses}
+		if self.subtitle is not None:
+			d['subtitle'] = self.subtitle
+		return d
+
+
+def process_chapter(html):
+	soup = BeautifulSoup(html, 'html.parser')
+
+	title = soup.find('span', class_='text').text.strip()
+	subtitle_h4 = soup.find('h4')
+	subtitle = subtitle_h4.find('span', class_='text').text.strip() if subtitle_h4 else None
 	verses_with_num = []
 
 	# Process each verse
 	current_verse = None
 	verse_number = None
-	for span in soup.find_all('span', class_=lambda c: c and c.startswith('text Ps-23-')):
+	for span in soup.find_all('span', class_=lambda c: c and c.startswith('text')):
 		# Check if this span contains a verse number
 		verse_num_sup = span.find('sup', class_='versenum')
 
@@ -40,17 +72,7 @@ def process_2(html_content):
 	if current_verse is not None and verse_number is not None:
 		verses_with_num.append({'number': verse_number, 'text': current_verse.strip()})
 
-	# Assert that verse numbers are 1 to N
-	for i, verse in enumerate(verses_with_num):
-		assert verse['number'] == str(i + 1)
-	# Transform verses into a list of strings
-	verses = [verse['text'] for verse in verses_with_num]
-
-	for i in range(len(verses)):
-		# Remove footnote markers like [a] and cross-reference markers like (A) and superscript references
-		verses[i] = (re.sub(r'\[\w\]|\(\w\)', '', verses[i])).strip()
-
-	return {'title': title, 'subtitle': subtitle, 'verses': verses}
+	return BibleChapter(verses_with_num, title, subtitle)
 
 
 def grab_bible_html(translation: str) -> dict:
@@ -69,9 +91,10 @@ def grab_bible_html(translation: str) -> dict:
 
 def process_bible(translation: str):
 	bible_html = grab_bible_html(translation)
-	verses_html = bible_html['Psalms'][23 - 1]['verses_html']
-	r = process_2(verses_html)
-	print(json.dumps(r, indent=4))
+	# verses_html = bible_html['Psalms'][23 - 1]['verses_html']
+	verses_html = bible_html['Jude'][1 - 1]['verses_html']
+	r = process_chapter(verses_html)
+	r.display()
 
 
 if __name__ == '__main__':
