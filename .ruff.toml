@@ -2,4 +2,5 @@ target-version = "py313"
 
 [format]
 indent-style = "tab"
+quote-style = "single"
 line-length = 120
