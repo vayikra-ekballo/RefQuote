@@ -3,23 +3,35 @@
 import re
 import json
 from bs4 import BeautifulSoup
+from dataclasses import dataclass
 from yield_books import yield_protestant_canon_books
 
 
 class BibleChapter:
-	def __init__(self, verses_with_num, sections, woj, title, subtitle):
+	@dataclass
+	class Section:
+		heading: str
+		verses: list[int]
+
+	@dataclass
+	class VerseWithNum:
+		number: int
+		text: str
+
+	def __init__(
+		self, verses_with_num: list[VerseWithNum], sections: list[Section], woj: list[int], title: str, subtitle: str
+	):
 		self.sections = sections
-		self.headings = {section['verses'][0]: section['heading'] for section in sections}
 		self.woj = woj
 		self.title = title
 		self.subtitle = subtitle
 
 		# Assert that verse numbers are 1 to N
 		for i, verse in enumerate(verses_with_num):
-			if str(verse['number']) != str(i + 1):
-				raise Exception(f'Unexpected verse number: {repr(verse["number"])} -- expected {repr(i + 1)}')
+			if str(verse.number) != str(i + 1):
+				raise Exception(f'Unexpected verse number: {repr(verse.number)} -- expected {repr(i + 1)}')
 		# Transform verses into a list of strings
-		verses = [verse['text'] for verse in verses_with_num]
+		verses = [verse.text for verse in verses_with_num]
 
 		self.verses = verses
 
@@ -36,17 +48,23 @@ class BibleChapter:
 		p += 'Verses:\n'
 		for i in range(len(d['verses'])):
 			verse_num = i + 1
-			if verse_num in self.headings:
-				p += f'[Heading: {self.headings[verse_num]}:]\n'
+			if verse_num in d['headings']:
+				p += f'[Heading: {d["headings"][verse_num]}:]\n'
 			p += f'  {verse_num}: {d["verses"][i]}\n'
 		if len(self.woj) > 0:
 			p += f'Words of Jesus: {self.woj}\n'
 		print(p)
 
+	@staticmethod
+	def get_headings(sections: list[Section]):
+		return {section.verses[0]: section.heading for section in sections}
+
 	def get_simple_dict(self, clean=False):
 		title = self.scrub(self.title) if clean else self.title
 		verses = [self.scrub(verse) for verse in self.verses] if clean else self.verses
-		d = {'title': title, 'verses': verses}
+		sections = [BibleChapter.Section(self.scrub(section.heading), section.verses) for section in self.sections]
+		headings = self.get_headings(sections)
+		d = {'title': title, 'verses': verses, 'woj': self.woj, 'sections': sections, 'headings': headings}
 		if self.subtitle is not None:
 			subtitle = self.scrub(self.subtitle) if clean else self.subtitle
 			d['subtitle'] = subtitle
@@ -67,7 +85,7 @@ class BibleChapter:
 		section_headers = soup.find_all('h3')
 		for header in section_headers:
 			# Create a new section
-			section = {'heading': header.text.strip(), 'verses': []}
+			section = BibleChapter.Section(heading=header.text.strip(), verses=[])
 
 			# Find all the paragraph elements following this header until the next header
 			next_element = header.next_sibling
@@ -94,7 +112,7 @@ class BibleChapter:
 								woj_verses.append(verse_num)
 
 							# Add to verses list
-							section['verses'].append(verse_num)
+							section.verses.append(verse_num)
 
 				next_element = next_element.next_sibling
 
@@ -123,7 +141,7 @@ class BibleChapter:
 			elif verse_num_sup:
 				# If we have a previous verse, add it to our collection
 				if current_verse is not None and verse_number is not None:
-					verses_with_num.append({'number': verse_number, 'text': current_verse.strip()})
+					verses_with_num.append(BibleChapter.VerseWithNum(verse_number, current_verse.strip()))
 
 				# Start a new verse
 				verse_number = int(verse_num_sup.text.strip())
@@ -138,7 +156,7 @@ class BibleChapter:
 
 		# Don't forget to add the last verse
 		if current_verse is not None and verse_number is not None:
-			verses_with_num.append({'number': verse_number, 'text': current_verse.strip()})
+			verses_with_num.append(BibleChapter.VerseWithNum(verse_number, current_verse.strip()))
 
 		return BibleChapter(verses_with_num, sections, woj_verses, title, subtitle)
 
