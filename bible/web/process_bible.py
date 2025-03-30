@@ -22,7 +22,7 @@ class BibleChapter:
 	@staticmethod
 	def scrub(text, clean=False):
 		# Remove footnote markers like [a] and cross-reference markers like (A) and superscript references
-		return (re.sub(r'\[\w\]|\(\w+\)', '', text)).strip()
+		return (re.sub(r'\[\w+\]|\(\w+\)', '', text)).strip()
 
 	def display(self, clean=False):
 		title = self.scrub(self.title) if clean else self.title
@@ -31,7 +31,7 @@ class BibleChapter:
 		verses = [self.scrub(verse) for verse in self.verses] if clean else self.verses
 		print(f'Title: {title}')
 		if self.subtitle is not None:
-			print(f'Subtitle: {subtitle or None}')
+			print(f'Subtitle: {subtitle}')
 		print('Verses:')
 		for i in range(len(verses)):
 			print(f'  {i + 1}: {verses[i]}')
@@ -104,4 +104,4 @@ def process_bible(translation: str):
 
 
 if __name__ == '__main__':
-	process_bible('NIV')
+	process_bible('NET')
