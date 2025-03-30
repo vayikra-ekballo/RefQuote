@@ -15,14 +15,26 @@ class BibleChapter:
 		heading: str
 		verses: list[int]
 
+		def as_dict(self):
+			return {'heading': self.heading, 'verses': self.verses}
+
 	@dataclass
 	class VerseWithNum:
 		number: int
 		text: str
 
 	def __init__(
-		self, verses_with_num: list[VerseWithNum], sections: list[Section], woj: list[int], title: str, subtitle: str
+		self,
+		book_name: str,
+		chapter: int,
+		verses_with_num: list[VerseWithNum],
+		sections: list[Section],
+		woj: list[int],
+		title: str,
+		subtitle: str,
 	):
+		self.book_name = book_name
+		self.chapter = chapter
 		self.sections = sections
 		self.woj = woj
 		self.title = title
@@ -59,7 +71,7 @@ class BibleChapter:
 
 	@staticmethod
 	def get_headings(sections: list[Section]):
-		return {section.verses[0]: section.heading for section in sections}
+		return {(section.verses[0] if len(section.verses) > 0 else None): section.heading for section in sections}
 
 	def get_simple_dict(self, clean=False):
 		title = self.scrub(self.title) if clean else self.title
@@ -85,8 +97,9 @@ class BibleChapter:
 				raise Exception(f'Unexpected verse number: {verse_num_text}')
 
 	@staticmethod
-	def process(html: str) -> 'BibleChapter':
-		soup = BeautifulSoup(html, 'html.parser')
+	def process(raw_chapter: 'RawBibleChapter') -> 'BibleChapter':
+		verses_html = raw_chapter.verses_html
+		soup = BeautifulSoup(verses_html, 'html.parser')
 
 		title = soup.find('span', class_='text').text.strip()
 		subtitle_h4 = soup.find('h4')
@@ -175,7 +188,19 @@ class BibleChapter:
 		if current_verse is not None and verse_number is not None:
 			verses_with_num.append(BibleChapter.VerseWithNum(verse_number, current_verse.strip()))
 
-		return BibleChapter(verses_with_num, sections, woj_verses, title, subtitle)
+		return BibleChapter(
+			raw_chapter.book_name, raw_chapter.chapter, verses_with_num, sections, woj_verses, title, subtitle
+		)
+
+	def get_json(self):
+		chapter_json = {'title': self.title, 'verses': self.verses}
+		if len(self.sections) > 0:
+			chapter_json['headings'] = self.get_headings(self.sections)
+		if len(self.woj) > 0:
+			chapter_json['woj'] = self.woj
+		if self.subtitle is not None:
+			chapter_json['subtitle'] = self.subtitle
+		return chapter_json
 
 
 @dataclass
@@ -203,10 +228,12 @@ def grab_bible_html(translation: str) -> dict:
 
 def process_chapter(raw_chapter: RawBibleChapter) -> BibleChapter:
 	# print(f'Processing {raw_chapter.book_name} {raw_chapter.chapter}...')
-	return BibleChapter.process(raw_chapter.verses_html)
+	return BibleChapter.process(raw_chapter)
 
 
 def process_bible(translation: str):
+	print(f'Processing {translation}...')
+	translation = translation.lower()
 	bible_html = grab_bible_html(translation)
 	# verses_html = bible_html['Psalms'][23 - 1]['verses_html']
 	# verses_html = bible_html['Psalms'][117 - 1]['verses_html']
@@ -235,7 +262,25 @@ def process_bible(translation: str):
 			)
 
 	with Pool() as p:
-		chapters = p.map(process_chapter, raw_chapters)
+		chapters: list[BibleChapter] = p.map(process_chapter, raw_chapters)
+
+	bible = {'books': {}}
+
+	for full_name, chapter_count in yield_protestant_canon_books():
+		for chapter_json in range(1, chapter_count + 1):
+			if full_name not in bible['books']:
+				bible['books'][full_name] = []
+			bible['books'][full_name].append(None)
+
+	for chapter in chapters:
+		bible['books'][chapter.book_name][chapter.chapter - 1] = chapter.get_json()
+
+	bible_json = json.dumps(bible, indent='\t')
+	output_json_path = f'../json/{translation}.json'
+	with open(output_json_path, 'w') as f:
+		f.write(bible_json)
+
+	print('Done. Written to: %s' % output_json_path)
 
 
 if __name__ == '__main__':
