@@ -243,7 +243,7 @@ def process_bible():
 	raw_chapters = list(yield_chapters())
 
 	total_chapters_count = len(raw_chapters)
-	assert len(raw_chapters) == 1189
+	assert total_chapters_count == 1189
 
 	with Pool() as p:
 		chapters = p.map(process_chapter, raw_chapters)
@@ -269,7 +269,7 @@ def process_bible():
 		bible['books'][ch.full_name][ch.chapter - 1] = chapter
 
 	bible_json = json.dumps(bible, indent='\t')
-	output_json_path = '../../json/mit.json'
+	output_json_path = '../../../json/mit.json'
 	with open(output_json_path, 'w') as f:
 		f.write(bible_json)
 
