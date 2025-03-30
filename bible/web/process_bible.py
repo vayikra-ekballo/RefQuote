@@ -227,7 +227,7 @@ def grab_bible_html(translation: str) -> dict:
 
 
 def process_chapter(raw_chapter: RawBibleChapter) -> BibleChapter:
-	# print(f'Processing {raw_chapter.book_name} {raw_chapter.chapter}...')
+	print(f'Processing {raw_chapter.book_name} {raw_chapter.chapter}...', end='\r')
 	return BibleChapter.process(raw_chapter)
 
 
@@ -235,13 +235,6 @@ def process_bible(translation: str):
 	print(f'Processing {translation}...')
 	translation = translation.lower()
 	bible_html = grab_bible_html(translation)
-	# verses_html = bible_html['Psalms'][23 - 1]['verses_html']
-	# verses_html = bible_html['Psalms'][117 - 1]['verses_html']
-	# verses_html = bible_html['Matthew'][5 - 1]['verses_html']
-	# verses_html = bible_html['Jude'][1 - 1]['verses_html']
-	# verses_html = bible_html['Matthew'][17 - 1]['verses_html']
-	# r = BibleChapter.process_chapter(verses_html, 'Matthew', 17)
-	# r.display(True)
 
 	raw_chapters: list[RawBibleChapter] = []
 	for book_name, chapter_count in yield_protestant_canon_books():
@@ -285,3 +278,6 @@ def process_bible(translation: str):
 
 if __name__ == '__main__':
 	process_bible('NIV')
+	# process_bible('NLT')
+	# process_bible('ESV')
+	# process_bible('NET')
