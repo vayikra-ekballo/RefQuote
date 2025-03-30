@@ -6,62 +6,6 @@ from bs4 import BeautifulSoup
 from yield_books import yield_protestant_canon_books
 
 
-def process_1(html):
-	soup = BeautifulSoup(html, 'html.parser')
-
-	# Extract title and subtitle
-	title = soup.find('h3').get_text(strip=True)
-	subtitle = soup.find('h4').get_text(strip=True)
-
-	# Extract verses
-	verses = []
-	current_verse = {'number': None, 'text': ''}
-
-	for line_elem in soup.find_all('span', class_=re.compile(r'^text Ps-23-\d+')):
-		# Extract verse number
-		verse_num_elem = line_elem.find('sup', class_='versenum')
-		if verse_num_elem:
-			# New verse starts
-			if current_verse:
-				verses.append(current_verse)
-			current_verse = {'number': int(verse_num_elem.get_text(strip=True)), 'text': ''}
-
-		# Extract text (excluding verse number)
-		line_text = line_elem.get_text(strip=True)
-		if verse_num_elem:
-			line_text = line_text.replace(verse_num_elem.get_text(strip=True), '').strip()
-
-		# # Add footnotes and crossreferences
-		# footnotes = line_elem.find_all('sup', class_='footnote')
-		# crossrefs = line_elem.find_all('sup', class_='crossreference')
-		#
-		# if footnotes:
-		#     current_verse['footnotes'] = [
-		#         f'[{fn.get_text(strip=True)}]' for fn in footnotes
-		#     ]
-		#
-		# if crossrefs:
-		#     current_verse['crossreferences'] = [
-		#         f'<{cr.get_text(strip=True)}>'.replace('(', '').replace(')', '')
-		#         for cr in crossrefs
-		#     ]
-
-		# Accumulate text
-		if line_text:
-			current_verse['text'] += line_text + ' '
-
-	# Add last verse
-	if current_verse:
-		verses.append(current_verse)
-
-	# Remove trailing spaces from text
-	for verse in verses:
-		verse['text'] = verse['text'].strip()
-
-	# Create final JSON structure
-	return {'title': title, 'subtitle': subtitle, 'verses': verses}
-
-
 def process_2(html_content):
 	soup = BeautifulSoup(html_content, 'html.parser')
 
@@ -136,8 +80,6 @@ def grab_bible_html(translation: str) -> dict:
 def process_bible(translation: str):
 	bible_html = grab_bible_html(translation)
 	verses_html = bible_html['Psalms'][23 - 1]['verses_html']
-	print(verses_html, '\n\n')
-	# r = process_1(verses_html)
 	r = process_2(verses_html)
 	print(json.dumps(r, indent=4))
 
