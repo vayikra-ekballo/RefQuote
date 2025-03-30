@@ -71,13 +71,17 @@ def chunk_out(html: str, translation: str):
             )
         crossrefs = crossrefs_l[0] if len(crossrefs_l) == 1 else None
 
+        if crossrefs is not None:
+            unwanted_crossrefs_div = std_text.find("div", class_="crossrefs hidden")
+            unwanted_crossrefs_div.extract()
+
     chunks = {"verses_html": str(std_text), "footnotes_html": str(footnotes)}
     if crossrefs is not None:
         chunks["crossrefs_html"] = str(crossrefs)
     return chunks
 
 
-def grab_chapter(book, chapter, translation):
+def grab_chapter(book: str, chapter: int, translation: str):
     url = f"https://www.biblegateway.com/passage/?search={book}%20{chapter}&version={translation}"
     response = requests.get(url)
     response.raise_for_status()
@@ -86,7 +90,7 @@ def grab_chapter(book, chapter, translation):
     return chunks
 
 
-def grab_bible(translation):
+def grab_bible(translation: str):
     for book_name, chapter_count in yield_protestant_canon_books():
         chapters = []
         for chapter_number in range(1, chapter_count + 1):
@@ -104,4 +108,12 @@ def grab_bible(translation):
 
 if __name__ == "__main__":
     # grab_bible("NIV")
-    grab_bible("NLT")
+    # grab_bible("NLT")
+    grab_bible("ESV")
+    # chunks = grab_chapter("Jude", 1, "ESV")
+    # print(chunks["verses_html"])
+    # print()
+    # print(chunks["crossrefs_html"])
+    # print()
+    # print(chunks["footnotes_html"])
+    pass
