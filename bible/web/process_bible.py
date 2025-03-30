@@ -85,7 +85,7 @@ class BibleChapter:
 				raise Exception(f'Unexpected verse number: {verse_num_text}')
 
 	@staticmethod
-	def process_chapter(html):
+	def process_chapter(html: str, book_name: str, chapter_num: int):
 		soup = BeautifulSoup(html, 'html.parser')
 
 		title = soup.find('span', class_='text').text.strip()
@@ -132,6 +132,9 @@ class BibleChapter:
 
 			# Add the section to the result
 			sections.append(section)
+
+		for h3elem in soup.find_all('h3'):
+			h3elem.extract()
 
 		# Process each verse
 		current_verse = None
@@ -195,14 +198,14 @@ def process_bible(translation: str):
 	# verses_html = bible_html['Psalms'][117 - 1]['verses_html']
 	# verses_html = bible_html['Matthew'][5 - 1]['verses_html']
 	# verses_html = bible_html['Jude'][1 - 1]['verses_html']
-	# verses_html = bible_html['Matthew'][17 - 1]['verses_html']
-	# r = BibleChapter.process_chapter(verses_html)
-	# r.display(True)
-	for book_name, chapter_count in yield_protestant_canon_books():
-		for i in range(chapter_count):
-			verses_html = bible_html[book_name][i]['verses_html']
-			print(f'Processing {book_name} {i + 1}...')
-			chapter = BibleChapter.process_chapter(verses_html)
+	verses_html = bible_html['Matthew'][17 - 1]['verses_html']
+	r = BibleChapter.process_chapter(verses_html, 'Matthew', 17)
+	r.display(True)
+	# for book_name, chapter_count in yield_protestant_canon_books():
+	# 	for i in range(chapter_count):
+	# 		verses_html = bible_html[book_name][i]['verses_html']
+	# 		print(f'Processing {book_name} {i + 1}...')
+	# 		chapter = BibleChapter.process_chapter(verses_html)
 
 
 if __name__ == '__main__':
