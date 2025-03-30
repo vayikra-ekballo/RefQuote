@@ -2,6 +2,7 @@
 
 import re
 import json
+from tqdm import tqdm
 from typing import Optional
 from bs4 import BeautifulSoup
 from multiprocessing import Pool
@@ -227,7 +228,7 @@ def grab_bible_html(translation: str) -> dict:
 
 
 def process_chapter(raw_chapter: RawBibleChapter) -> BibleChapter:
-	print(f'Processing {raw_chapter.book_name} {raw_chapter.chapter}...', end='\r')
+	# print(f'Processing {raw_chapter.book_name} {raw_chapter.chapter}...', end='\r')
 	return BibleChapter.process(raw_chapter)
 
 
@@ -255,7 +256,7 @@ def process_bible(translation: str):
 			)
 
 	with Pool() as p:
-		chapters: list[BibleChapter] = p.map(process_chapter, raw_chapters)
+		chapters: list[BibleChapter] = list(tqdm(p.imap(process_chapter, raw_chapters, chunksize=10), total=1189))
 
 	bible = {'books': {}}
 
