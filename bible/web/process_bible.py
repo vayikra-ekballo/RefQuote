@@ -52,13 +52,19 @@ def process_2(html_content):
 	if current_verse is not None and verse_number is not None:
 		psalm_json['verses'].append({'number': verse_number, 'text': current_verse.strip()})
 
+	# Assert that verse numbers are 1 to N
+	for i, verse in enumerate(psalm_json['verses']):
+		assert verse['number'] == str(i + 1)
+	# Transform verses into a list of strings
+	psalm_json['verses'] = [verse['text'] for verse in psalm_json['verses']]
+
 	# Clean up the verses by removing footnote references and cross-references
-	for verse in psalm_json['verses']:
+	for i in range(len(psalm_json['verses'])):
 		# Remove footnote markers like [a] and cross-reference markers like (A)
-		text = verse['text']
+		text = psalm_json['verses'][i]
 		# Remove superscript references
 		text = re.sub(r'\[\w\]|\(\w\)', '', text)
-		verse['text'] = text.strip()
+		psalm_json['verses'][i] = text.strip()
 
 	return psalm_json
 
