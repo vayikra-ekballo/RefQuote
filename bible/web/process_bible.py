@@ -9,25 +9,13 @@ from yield_books import yield_protestant_canon_books
 def process_2(html_content):
 	soup = BeautifulSoup(html_content, 'html.parser')
 
-	# Extract the title and subtitle
 	title = soup.find('span', class_='text Ps-23-1', id='en-NIV-14237').text.strip()
 	subtitle = soup.find('h4').find('span', class_='text Ps-23-1').text.strip()
-
-	# Initialize the structure
-	psalm_json = {'title': title, 'subtitle': subtitle, 'verses': []}
-
-	# Find all verse numbers
-	verse_spans = soup.find_all(
-		'span',
-		class_=lambda c: c
-		and c.startswith('text Ps-23-')
-		and 'versenum' in [s.get('class', [''])[0] for s in soup.find_all('sup') if s.parent == c],
-	)
+	verses_with_num = []
 
 	# Process each verse
 	current_verse = None
 	verse_number = None
-
 	for span in soup.find_all('span', class_=lambda c: c and c.startswith('text Ps-23-')):
 		# Check if this span contains a verse number
 		verse_num_sup = span.find('sup', class_='versenum')
@@ -35,7 +23,7 @@ def process_2(html_content):
 		if verse_num_sup:
 			# If we have a previous verse, add it to our collection
 			if current_verse is not None and verse_number is not None:
-				psalm_json['verses'].append({'number': verse_number, 'text': current_verse.strip()})
+				verses_with_num.append({'number': verse_number, 'text': current_verse.strip()})
 
 			# Start a new verse
 			verse_number = verse_num_sup.text.strip()
@@ -50,23 +38,19 @@ def process_2(html_content):
 
 	# Don't forget to add the last verse
 	if current_verse is not None and verse_number is not None:
-		psalm_json['verses'].append({'number': verse_number, 'text': current_verse.strip()})
+		verses_with_num.append({'number': verse_number, 'text': current_verse.strip()})
 
 	# Assert that verse numbers are 1 to N
-	for i, verse in enumerate(psalm_json['verses']):
+	for i, verse in enumerate(verses_with_num):
 		assert verse['number'] == str(i + 1)
 	# Transform verses into a list of strings
-	psalm_json['verses'] = [verse['text'] for verse in psalm_json['verses']]
+	verses = [verse['text'] for verse in verses_with_num]
 
-	# Clean up the verses by removing footnote references and cross-references
-	for i in range(len(psalm_json['verses'])):
-		# Remove footnote markers like [a] and cross-reference markers like (A)
-		text = psalm_json['verses'][i]
-		# Remove superscript references
-		text = re.sub(r'\[\w\]|\(\w\)', '', text)
-		psalm_json['verses'][i] = text.strip()
+	for i in range(len(verses)):
+		# Remove footnote markers like [a] and cross-reference markers like (A) and superscript references
+		verses[i] = (re.sub(r'\[\w\]|\(\w\)', '', verses[i])).strip()
 
-	return psalm_json
+	return {'title': title, 'subtitle': subtitle, 'verses': verses}
 
 
 def grab_bible_html(translation: str) -> dict:
