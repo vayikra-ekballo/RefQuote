@@ -17,18 +17,24 @@ class BibleChapter:
 		# Transform verses into a list of strings
 		verses = [verse['text'] for verse in verses_with_num]
 
-		for i in range(len(verses)):
-			# Remove footnote markers like [a] and cross-reference markers like (A) and superscript references
-			verses[i] = (re.sub(r'\[\w\]|\(\w+\)', '', verses[i])).strip()
-
 		self.verses = verses
 
-	def display(self):
-		print(f'Title: {self.title}')
-		print(f'Subtitle: {self.subtitle}')
+	@staticmethod
+	def scrub(text, clean=False):
+		# Remove footnote markers like [a] and cross-reference markers like (A) and superscript references
+		return (re.sub(r'\[\w\]|\(\w+\)', '', text)).strip()
+
+	def display(self, clean=False):
+		title = self.scrub(self.title) if clean else self.title
+		if self.subtitle is not None:
+			subtitle = self.scrub(self.subtitle) if clean else self.subtitle
+		verses = [self.scrub(verse) for verse in self.verses] if clean else self.verses
+		print(f'Title: {title}')
+		if self.subtitle is not None:
+			print(f'Subtitle: {subtitle or None}')
 		print('Verses:')
-		for i in range(len(self.verses)):
-			print(f'  {i + 1}: {self.verses[i]}')
+		for i in range(len(verses)):
+			print(f'  {i + 1}: {verses[i]}')
 
 	def get_simple_dict(self):
 		d = {'title': self.title, 'verses': self.verses}
@@ -94,7 +100,7 @@ def process_bible(translation: str):
 	# verses_html = bible_html['Psalms'][23 - 1]['verses_html']
 	verses_html = bible_html['Jude'][1 - 1]['verses_html']
 	r = process_chapter(verses_html)
-	r.display()
+	r.display(True)
 
 
 if __name__ == '__main__':
