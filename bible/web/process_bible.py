@@ -44,11 +44,11 @@ class BibleChapter:
 		verses = [verse.text for verse in verses_with_num]
 		self.verses = verses
 
-		book_chapter = f'{book_name if book_name != "Psalms" else "Psalm"} {chapter}'
+		self.name = f'{book_name if book_name != "Psalms" else "Psalm"} {chapter}'
 		if len(sections) > 0:
 			for section in sections:
-				if section.heading.startswith(book_chapter):
-					section.heading = section.heading[len(book_chapter) :]
+				if section.heading.startswith(self.name):
+					section.heading = section.heading[len(self.name) :]
 				section.heading = section.heading.strip()
 		self.sections = list(filter(lambda s: len(s.heading) > 0, sections))
 
@@ -85,7 +85,7 @@ class BibleChapter:
 
 	def get_json(self, clean=False):
 		verses = [self.scrub(verse) for verse in self.verses] if clean else self.verses
-		chapter_json = {'verses': verses}
+		chapter_json = {'name': self.name, 'verses': verses}
 		if len(self.sections) > 0:
 			sections = [
 				BibleChapter.Section(self.scrub(section.heading) if clean else section.heading, section.verses)
