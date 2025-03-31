@@ -51,7 +51,7 @@ class BibleChapter:
 		self.verses = verses
 
 	@staticmethod
-	def scrub(text, clean=False):
+	def scrub(text):
 		# Remove footnote markers like [a] and cross-reference markers like (A) and superscript references
 		return (re.sub(r'\[\w+\]|\(\w+\)', '', text)).strip()
 
@@ -138,6 +138,8 @@ class BibleChapter:
 		section_headers = soup.find_all('h3') + soup.find_all('h4')
 		for header in section_headers:
 			# Create a new section
+			# header_text = header.find('span', class_='text').text.strip()
+			# section = BibleChapter.Section(heading=header_text, verses=[])
 			section = BibleChapter.Section(heading=header.text.strip(), verses=[])
 
 			# Find all the paragraph elements following this header until the next header
