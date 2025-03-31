@@ -86,14 +86,17 @@ class BibleChapter:
 	def get_json(self, clean=False):
 		title = self.scrub(self.title) if clean else self.title
 		verses = [self.scrub(verse) for verse in self.verses] if clean else self.verses
-		sections = [BibleChapter.Section(self.scrub(section.heading), section.verses) for section in self.sections]
+		sections = [
+			BibleChapter.Section(self.scrub(section.heading) if clean else section.heading, section.verses) for section in self.sections
+		]
 		section_headings: set = {section.heading for section in self.sections}
-		headings = self.get_headings(sections)
 
 		subtitle = None
 		if self.subtitle is not None:
 			subtitle = self.scrub(self.subtitle) if clean else self.subtitle
 			if subtitle in title:
+				subtitle = None
+			if subtitle in section_headings:
 				subtitle = None
 		if title in section_headings:
 			title = None
@@ -105,7 +108,7 @@ class BibleChapter:
 			chapter_json['subtitle'] = subtitle
 		chapter_json['verses'] = verses
 		if len(self.sections) > 0:
-			chapter_json['headings'] = headings
+			chapter_json['headings'] = self.get_headings(sections)
 		if len(self.woj) > 0:
 			chapter_json['woj'] = self.woj
 		return chapter_json
