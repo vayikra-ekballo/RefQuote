@@ -72,13 +72,15 @@ class BibleChapter:
 
 	@staticmethod
 	def get_headings(sections: list[Section]):
-		# return {(section.verses[0] if len(section.verses) > 0 else None): section.heading for section in sections}
 		headings = {}
 		for section in sections:
 			start_verse = section.verses[0] if len(section.verses) > 0 else None
-			if start_verse in headings:
-				raise Exception('Did not expect to see the same start_verse twice.')
-			headings[start_verse] = section.heading
+			if start_verse not in headings:
+				headings[start_verse] = section.heading
+			else:
+				if type(headings[start_verse]) is str:
+					headings[start_verse] = [headings[start_verse]]
+				headings[start_verse].append(section.heading)
 		return headings
 
 	def get_json(self, clean=False):
@@ -133,7 +135,7 @@ class BibleChapter:
 		# Find all section headers (h3 tags)
 		sections = []
 		woj_verses = []
-		section_headers = soup.find_all('h3')
+		section_headers = soup.find_all('h3') + soup.find_all('h4')
 		for header in section_headers:
 			# Create a new section
 			section = BibleChapter.Section(heading=header.text.strip(), verses=[])
@@ -201,6 +203,7 @@ class BibleChapter:
 				verse_number = BibleChapter.extract_verse_num(verse_num_sup)
 				# Remove the verse number from the text
 				verse_text = span.text.replace(verse_num_sup.text, '', 1).strip()
+				verse_num_sup.extract()
 				current_verse = verse_text
 			else:
 				# This is a continuation of the current verse
@@ -212,9 +215,7 @@ class BibleChapter:
 		if current_verse is not None and verse_number is not None:
 			verses_with_num.append(BibleChapter.VerseWithNum(verse_number, current_verse.strip()))
 
-		return BibleChapter(
-			raw_chapter.book_name, raw_chapter.chapter, verses_with_num, sections, woj_verses, title, subtitle
-		)
+		return BibleChapter(raw_chapter.book_name, raw_chapter.chapter, verses_with_num, sections, woj_verses, title, subtitle)
 
 
 @dataclass
