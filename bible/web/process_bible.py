@@ -88,10 +88,17 @@ class BibleChapter:
 		]
 		section_headings: set = {section.heading for section in self.sections}
 
+		if title:
+			chapter_ = f'{self.chapter}\xa0'
+			if title.startswith(chapter_):
+				title = title[len(chapter_) :]
 		if title in section_headings:
 			title = None
 		if title:
 			if verses[0] in title:
+				title = None
+		if title:
+			if title in verses[0]:
 				title = None
 
 		chapter_json = {}
