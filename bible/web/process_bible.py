@@ -34,7 +34,6 @@ class BibleChapter:
 	):
 		self.book_name = book_name
 		self.chapter = chapter
-		self.sections = sections
 		self.woj = woj
 
 		# Assert that verse numbers are 1 to N
@@ -43,8 +42,15 @@ class BibleChapter:
 				raise Exception(f'Unexpected verse number: {repr(verse.number)} -- expected {repr(i + 1)}')
 		# Transform verses into a list of strings
 		verses = [verse.text for verse in verses_with_num]
-
 		self.verses = verses
+
+		book_chapter = f'{book_name if book_name != "Psalms" else "Psalm"} {chapter}'
+		if len(sections) > 0:
+			for section in sections:
+				if section.heading.startswith(book_chapter):
+					section.heading = section.heading[len(book_chapter) :]
+				section.heading = section.heading.strip()
+		self.sections = list(filter(lambda s: len(s.heading) > 0, sections))
 
 	@staticmethod
 	def scrub(text):
