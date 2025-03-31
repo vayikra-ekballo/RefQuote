@@ -72,7 +72,14 @@ class BibleChapter:
 
 	@staticmethod
 	def get_headings(sections: list[Section]):
-		return {(section.verses[0] if len(section.verses) > 0 else None): section.heading for section in sections}
+		# return {(section.verses[0] if len(section.verses) > 0 else None): section.heading for section in sections}
+		headings = {}
+		for section in sections:
+			start_verse = section.verses[0] if len(section.verses) > 0 else None
+			if start_verse in headings:
+				raise Exception('Did not expect to see the same start_verse twice.')
+			headings[start_verse] = section.heading
+		return headings
 
 	def get_simple_dict(self, clean=False):
 		title = self.scrub(self.title) if clean else self.title
