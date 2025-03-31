@@ -31,13 +31,11 @@ class BibleChapter:
 		verses_with_num: list[VerseWithNum],
 		sections: list[Section],
 		woj: list[int],
-		title: str,
 	):
 		self.book_name = book_name
 		self.chapter = chapter
 		self.sections = sections
 		self.woj = woj
-		self.title = title
 
 		# Assert that verse numbers are 1 to N
 		for i, verse in enumerate(verses_with_num):
@@ -55,7 +53,7 @@ class BibleChapter:
 
 	def display(self, clean=False):
 		d = self.get_json(clean)
-		p = f'Title: {d["title"]}\n'
+		p = f'{self.book_name} {self.chapter}::\n'
 		p += 'Verses:\n'
 		for i in range(len(d['verses'])):
 			verse_num = i + 1
@@ -80,32 +78,13 @@ class BibleChapter:
 		return headings
 
 	def get_json(self, clean=False):
-		title = self.scrub(self.title) if clean else self.title
 		verses = [self.scrub(verse) for verse in self.verses] if clean else self.verses
-		sections = [
-			BibleChapter.Section(self.scrub(section.heading) if clean else section.heading, section.verses)
-			for section in self.sections
-		]
-		section_headings: set = {section.heading for section in self.sections}
-
-		if title:
-			chapter_ = f'{self.chapter}\xa0'
-			if title.startswith(chapter_):
-				title = title[len(chapter_) :]
-		if title in section_headings:
-			title = None
-		if title:
-			if verses[0] in title:
-				title = None
-		if title:
-			if title in verses[0]:
-				title = None
-
-		chapter_json = {}
-		if title:
-			chapter_json['title'] = title
-		chapter_json['verses'] = verses
+		chapter_json = {'verses': verses}
 		if len(self.sections) > 0:
+			sections = [
+				BibleChapter.Section(self.scrub(section.heading) if clean else section.heading, section.verses)
+				for section in self.sections
+			]
 			chapter_json['headings'] = self.get_headings(sections)
 		if len(self.woj) > 0:
 			chapter_json['woj'] = self.woj
@@ -127,8 +106,6 @@ class BibleChapter:
 	def process(raw_chapter: 'RawBibleChapter') -> 'BibleChapter':
 		verses_html = raw_chapter.verses_html
 		soup = BeautifulSoup(verses_html, 'html.parser')
-
-		title = soup.find('span', class_='text').text.strip()
 		verses_with_num = []
 
 		# Find all section headers (h3 tags)
@@ -216,7 +193,7 @@ class BibleChapter:
 		if current_verse is not None and verse_number is not None:
 			verses_with_num.append(BibleChapter.VerseWithNum(verse_number, current_verse.strip()))
 
-		return BibleChapter(raw_chapter.book_name, raw_chapter.chapter, verses_with_num, sections, woj_verses, title)
+		return BibleChapter(raw_chapter.book_name, raw_chapter.chapter, verses_with_num, sections, woj_verses)
 
 
 @dataclass
