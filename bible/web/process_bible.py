@@ -269,11 +269,9 @@ def process_bible(translation: str):
 	for chapter in chapters:
 		bible['books'][chapter.book_name][chapter.chapter - 1] = chapter.get_json()
 
-	bible_json = json.dumps(bible, indent='\t', ensure_ascii=False)
 	output_json_path = f'../json/{translation}.json'
 	with open(output_json_path, 'w') as f:
-		f.write(bible_json)
-
+		json.dump(bible, f, indent='\t', ensure_ascii=False)
 	print('Done. Written to: %s' % output_json_path)
 
 
