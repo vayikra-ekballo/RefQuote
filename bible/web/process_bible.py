@@ -56,7 +56,7 @@ class BibleChapter:
 		return (re.sub(r'\[\w+\]|\(\w+\)', '', text)).strip()
 
 	def display(self, clean=False):
-		d = self.get_simple_dict(clean)
+		d = self.get_json(clean)
 		p = f'Title: {d["title"]}\n'
 		if 'subtitle' in d:
 			p += f'Subtitle: {d["subtitle"]}\n'
@@ -81,16 +81,32 @@ class BibleChapter:
 			headings[start_verse] = section.heading
 		return headings
 
-	def get_simple_dict(self, clean=False):
+	def get_json(self, clean=False):
 		title = self.scrub(self.title) if clean else self.title
 		verses = [self.scrub(verse) for verse in self.verses] if clean else self.verses
 		sections = [BibleChapter.Section(self.scrub(section.heading), section.verses) for section in self.sections]
+		section_headings: set = {section.heading for section in self.sections}
 		headings = self.get_headings(sections)
-		d = {'title': title, 'verses': verses, 'woj': self.woj, 'sections': sections, 'headings': headings}
+
+		subtitle = None
 		if self.subtitle is not None:
 			subtitle = self.scrub(self.subtitle) if clean else self.subtitle
-			d['subtitle'] = subtitle
-		return d
+			if subtitle in title:
+				subtitle = None
+		if title in section_headings:
+			title = None
+
+		chapter_json = {}
+		if title:
+			chapter_json['title'] = title
+		if subtitle:
+			chapter_json['subtitle'] = subtitle
+		chapter_json['verses'] = verses
+		if len(self.sections) > 0:
+			chapter_json['headings'] = headings
+		if len(self.woj) > 0:
+			chapter_json['woj'] = self.woj
+		return chapter_json
 
 	@staticmethod
 	def extract_verse_num(verse_num_elem) -> Optional[int]:
@@ -199,16 +215,6 @@ class BibleChapter:
 		return BibleChapter(
 			raw_chapter.book_name, raw_chapter.chapter, verses_with_num, sections, woj_verses, title, subtitle
 		)
-
-	def get_json(self):
-		chapter_json = {'title': self.title, 'verses': self.verses}
-		if len(self.sections) > 0:
-			chapter_json['headings'] = self.get_headings(self.sections)
-		if len(self.woj) > 0:
-			chapter_json['woj'] = self.woj
-		if self.subtitle is not None:
-			chapter_json['subtitle'] = self.subtitle
-		return chapter_json
 
 
 @dataclass
