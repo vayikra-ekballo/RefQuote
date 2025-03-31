@@ -271,7 +271,7 @@ def process_bible(translation: str):
 
 	output_json_path = f'../json/{translation}.json'
 	with open(output_json_path, 'w') as f:
-		json.dump(bible, f, indent='\t', ensure_ascii=False)
+		json.dump(bible, f, indent=1, ensure_ascii=False)
 	print('Done. Written to: %s' % output_json_path)
 
 
