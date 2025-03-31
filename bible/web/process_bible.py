@@ -90,6 +90,9 @@ class BibleChapter:
 
 		if title in section_headings:
 			title = None
+		if title:
+			if verses[0] in title:
+				title = None
 
 		chapter_json = {}
 		if title:
