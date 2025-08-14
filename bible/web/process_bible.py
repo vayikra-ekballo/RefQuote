@@ -2,6 +2,7 @@
 
 import re
 import json
+import os
 from tqdm import tqdm
 from typing import Optional
 from bs4 import BeautifulSoup
@@ -75,6 +76,8 @@ class BibleChapter:
 		headings = {}
 		for section in sections:
 			start_verse = section.verses[0] if len(section.verses) > 0 else None
+			if start_verse is None:
+				continue
 			if start_verse not in headings:
 				headings[start_verse] = section.heading
 			else:
@@ -117,7 +120,7 @@ class BibleChapter:
 		# Find all section headers (h3 tags)
 		sections = []
 		woj_verses = []
-		section_headers = soup.find_all('h3') + soup.find_all('h4')
+		section_headers = soup.find_all(['h3', 'h4'])
 		for header in section_headers:
 			# Create a new section
 			# header_text = header.find('span', class_='text').text.strip()
@@ -127,7 +130,7 @@ class BibleChapter:
 			# Find all the paragraph elements following this header until the next header
 			next_element = header.next_sibling
 
-			while next_element and (not isinstance(next_element, type(header)) or next_element.name != 'h3'):
+			while next_element and not (hasattr(next_element, 'name') and next_element.name in ['h3', 'h4']):
 				if hasattr(next_element, 'name') and next_element.name in ['p', 'div']:
 					# Process paragraphs or divs containing verses
 					verse_spans = next_element.find_all('span', class_=lambda c: c and c.startswith('text'))
@@ -149,15 +152,16 @@ class BibleChapter:
 								woj_verses.append(verse_num)
 
 							# Add to verses list
-							section.verses.append(verse_num)
+							if verse_num not in section.verses:
+								section.verses.append(verse_num)
 
 				next_element = next_element.next_sibling
 
 			# Add the section to the result
 			sections.append(section)
 
-		for h3elem in soup.find_all('h3'):
-			h3elem.extract()
+		for header_elem in soup.find_all(['h3', 'h4']):
+			header_elem.extract()
 
 		# Process each verse
 		current_verse = None
@@ -254,7 +258,7 @@ def process_bible(translation: str):
 			)
 
 	with Pool() as p:
-		chapters: list[BibleChapter] = list(tqdm(p.imap(process_chapter, raw_chapters, chunksize=10), total=1189))
+		chapters: list[BibleChapter] = list(tqdm(p.imap(process_chapter, raw_chapters, chunksize=10), total=len(raw_chapters)))
 
 	bible = {'books': {}}
 
@@ -267,7 +271,7 @@ def process_bible(translation: str):
 	for chapter in chapters:
 		bible['books'][chapter.book_name][chapter.chapter - 1] = chapter.get_json()
 
-	output_json_path = f'../json/{translation}.json'
+	output_json_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'json', f'{translation}.json'))
 	with open(output_json_path, 'w') as f:
 		json.dump(bible, f, indent=1, ensure_ascii=False)
 	print('Done. Written to: %s' % output_json_path)
