@@ -36,13 +36,25 @@ class BibleChapter:
 		self.chapter = chapter
 		self.woj = woj
 
-		# Assert that verse numbers are 1 to N
-		for i, verse in enumerate(verses_with_num):
-			if str(verse.number) != str(i + 1):
-				raise Exception(f'Unexpected verse number: {repr(verse.number)} -- expected {repr(i + 1)}')
-		# Transform verses into a list of strings
-		verses = [verse.text for verse in verses_with_num]
-		self.verses = verses
+		# Build verses array with proper indexing, handling skipped verses
+		# Some translations skip certain verses that later manuscripts showed to be later additions
+		if len(verses_with_num) == 0:
+			self.verses = []
+			self.skipped_verse_numbers = []
+		else:
+			# Get the set of verse numbers we have
+			present_verse_numbers = {verse.number for verse in verses_with_num}
+			max_verse_num = max(verse.number for verse in verses_with_num)
+
+			# Find skipped verses (numbers from 1 to max that are not present)
+			all_expected = set(range(1, max_verse_num + 1))
+			self.skipped_verse_numbers = sorted(all_expected - present_verse_numbers)
+
+			# Build verses array indexed by verse number - 1, with None for skipped verses
+			verses = [None] * max_verse_num
+			for verse in verses_with_num:
+				verses[verse.number - 1] = verse.text
+			self.verses = verses
 
 		self.name = f'{book_name if book_name != "Psalms" else "Psalm"} {chapter}'
 		if len(sections) > 0:
@@ -61,11 +73,16 @@ class BibleChapter:
 		d = self.get_json(clean)
 		p = f'{self.book_name} {self.chapter}::\n'
 		p += 'Verses:\n'
+		skipped = set(d.get('skipped_verse_numbers', []))
+		headings = d.get('headings', {})
 		for i in range(len(d['verses'])):
 			verse_num = i + 1
-			if verse_num in d['headings']:
-				p += f'[Heading: {d["headings"][verse_num]}:]\n'
-			p += f'  {verse_num}: {d["verses"][i]}\n'
+			if verse_num in headings:
+				p += f'[Heading: {headings[verse_num]}:]\n'
+			if verse_num in skipped:
+				p += f'  {verse_num}: [SKIPPED]\n'
+			else:
+				p += f'  {verse_num}: {d["verses"][i]}\n'
 		if len(self.woj) > 0:
 			p += f'Words of Jesus: {self.woj}\n'
 		print(p)
@@ -84,8 +101,10 @@ class BibleChapter:
 		return headings
 
 	def get_json(self, clean=False):
-		verses = [self.scrub(verse) for verse in self.verses] if clean else self.verses
+		verses = [self.scrub(verse) if verse is not None else None for verse in self.verses] if clean else self.verses
 		chapter_json = {'name': self.name, 'verses': verses}
+		if len(self.skipped_verse_numbers) > 0:
+			chapter_json['skipped_verse_numbers'] = self.skipped_verse_numbers
 		if len(self.sections) > 0:
 			sections = [
 				BibleChapter.Section(self.scrub(section.heading) if clean else section.heading, section.verses)
@@ -97,7 +116,7 @@ class BibleChapter:
 		return chapter_json
 
 	@staticmethod
-	def extract_verse_num(verse_num_elem) -> Optional[int]:
+	def extract_verse_num(verse_num_elem, book_name: Optional[str] = None) -> Optional[int]:
 		try:
 			return int(verse_num_elem.text.strip()) if verse_num_elem else None
 		except ValueError:
@@ -106,7 +125,10 @@ class BibleChapter:
 				verse_num_text = verse_num_text[1:-1]
 				return int(verse_num_text)
 			else:
-				raise Exception(f'Unexpected verse number: {verse_num_text}')
+				if book_name:
+					raise Exception(f'Unexpected verse number in {book_name }: {verse_num_text}')
+				else:
+					raise Exception(f'Unexpected verse number: {verse_num_text}')
 
 	@staticmethod
 	def process(raw_chapter: 'RawBibleChapter') -> 'BibleChapter':
@@ -136,7 +158,7 @@ class BibleChapter:
 						# Extract verse number
 						verse_num_elem = span.find('sup', class_='versenum')
 						chapter_num_span = span.find('span', class_='chapternum')
-						verse_num = BibleChapter.extract_verse_num(verse_num_elem)
+						verse_num = BibleChapter.extract_verse_num(verse_num_elem, book_name=raw_chapter.book_name)
 						if chapter_num_span:
 							verse_num = 1
 
@@ -171,7 +193,7 @@ class BibleChapter:
 			if chapter_num_span:
 				# If we have a previous verse, add it to our collection
 				if current_verse is not None or verse_number is not None:
-					raise Exception('Unexpected chapter number')
+					raise Exception('Unexpected chapter number in {raw_chapter.book_name} {raw_chapter.chapter}: {chapter_num_span.text}')
 
 				# Start a new chapter
 				verse_number = 1
@@ -276,5 +298,5 @@ def process_bible(translation: str):
 if __name__ == '__main__':
 	process_bible('NIV')
 	# process_bible('NLT')
-	# process_bible('ESV')
-	# process_bible('NET')
+	process_bible('ESV')
+	process_bible('NET')
