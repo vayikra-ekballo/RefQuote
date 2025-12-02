@@ -19,7 +19,7 @@ class BibleChapter:
 		def as_dict(self):
 			return {'heading': self.heading, 'verses': self.verses}
 
-	@dataclass
+	@dataclass(frozen=True)
 	class VerseWithNum:
 		number: int
 		text: str
